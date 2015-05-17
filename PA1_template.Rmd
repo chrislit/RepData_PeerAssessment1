@@ -108,14 +108,37 @@ mean(activity.imp.daily.totals$steps)
 median(activity.imp.daily.totals$steps)
 ```
 ```
-#  Imputation with the mean values shifted the daily median to equal the mean,
-#  while the daily mean remains unchanged.
+#  Imputation with the mean values shifted the median to equal the mean,
+#  while the mean remains unchanged.
 ```
 ## Are there differences in activity patterns between weekdays and weekends?
 
 1. Create a new factor variable in the dataset with two levels -- "weekday" and "weekend"
 indicating whether a given date is a weekday or weekend day.
+
+```{r}
+activity.df$dayClass <- as.factor(ifelse(is.element(weekdays(activity.df$date),
+                                                    c("Saturday", "Sunday")),
+                                         "weekend", "weekday"))
+```
+
 2. Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval
 (x-axis) and the average number of steps taken, averaged across all weekday days or weekend
 days (y-axis). The plot should look something like the following, which was created using
 simulated data:
+
+```{r}
+activity.int.means.wd <- aggregate(activity.df$steps,
+                                   list(activity.df$interval, activity.df$dayClass),
+                                   FUN = mean)
+colnames(activity.int.means.wd) <- c("interval", "dayClass", "steps")
+
+# reorder the factors to place weekend on top, as in the example
+activity.int.means.wd$dayClass <- factor(activity.int.means.wd$dayClass,
+                                         levels = c("weekend", "weekday"))
+
+ggplot(activity.int.means.wd, aes(interval, steps)) +
+  geom_line() +
+  facet_grid(dayClass ~ .) +
+  labs(title = "5-minute interval average steps by type of day", x = "Interval", y = "Number of steps")
+```
