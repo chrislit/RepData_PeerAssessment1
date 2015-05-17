@@ -20,8 +20,8 @@ opts_chunk$set(echo = TRUE)
 if (!file.exists("activity.csv")) {
   unzip(zipfile = "activity.zip")
 }
-activity.df <- read.csv(file = "activity.csv", sep = ",", colClasses=c("integer", "Date", "integer"))
-activity.df <- na.omit(activity.df)
+activity.orig <- read.csv(file = "activity.csv", sep = ",", colClasses=c("integer", "Date", "integer"))
+activity.df <- na.omit(activity.orig)
 ```
 
 ## What is mean total number of steps taken per day?
@@ -68,16 +68,49 @@ activity.int.means$interval[which.max(activity.int.means$steps)]
 
 1. Calculate and report the total number of missing values in the dataset (i.e. the total number
 of rows with NAs)
+```{r}
+sum(is.na(activity.orig$steps))
+```
+
 2. Devise a strategy for filling in all of the missing values in the dataset. The strategy does
 not need to be sophisticated. For example, you could use the mean/median for that day, or the
 mean for that 5-minute interval, etc.
+```
+#  I will fill missing values with their interval's mean across other days.
+```
+
 3. Create a new dataset that is equal to the original dataset but with the missing data filled
 in.
+```{r}
+# First create a copy of activity.orig
+activity.imp <- as.data.frame(activity.orig)
+
+for (i in which(is.na(activity.imp$steps))) {
+  interval <- activity.imp$interval[i]
+  activity.imp$steps[i] <- activity.int.means[which(activity.int.means$interval == interval),]$steps
+}
+
+```
+
 4. Make a histogram of the total number of steps taken each day and Calculate and report the
-mean and median total number of steps taken per day. Do these values differ from the estimates
+*mean* and *median* total number of steps taken per day. Do these values differ from the estimates
 from the first part of the assignment? What is the impact of imputing missing data on the
 estimates of the total daily number of steps?
+```{r}
+activity.imp.daily.totals <- aggregate(activity.imp$steps, by = list(activity.imp$date), FUN = sum)
+colnames(activity.imp.daily.totals) <- c("date", "steps")
 
+ggplot(data = activity.imp.daily.totals, aes(x = date, y = steps)) +
+  geom_histogram(stat = "identity") +
+  labs(title = "Total steps taken each day (with imputation)", x = "Date", y = "Steps")
+
+mean(activity.imp.daily.totals$steps)
+median(activity.imp.daily.totals$steps)
+```
+```
+#  Imputation with the mean values shifted the daily median to equal the mean,
+#  while the daily mean remains unchanged.
+```
 ## Are there differences in activity patterns between weekdays and weekends?
 
 1. Create a new factor variable in the dataset with two levels -- "weekday" and "weekend"
